@@ -1,22 +1,22 @@
 # FinMatcher - AI-Powered Financial Reconciliation System
 
-## 📋 Project Overview | پروجیکٹ کا جائزہ
+## 📋 Project Overview
 
-FinMatcher ایک intelligent financial reconciliation system ہے جو credit card statements کو email receipts کے ساتھ automatically match کرتا ہے۔ یہ AI-powered matching، OCR processing، اور Google Drive integration استعمال کرتا ہے۔
+FinMatcher is an enterprise-grade intelligent financial reconciliation system that automates the matching of credit card statements with email receipts. The system leverages advanced AI-powered semantic matching, optical character recognition (OCR), and seamless Google Drive integration to streamline financial operations.
 
 **Key Features:**
-- 🤖 AI-powered semantic matching using DeepSeek
+- 🤖 AI-powered semantic matching using DeepSeek embeddings
 - 📧 Multi-account Gmail integration (IMAP & Gmail API)
-- 🔍 OCR engine for attachment processing (images & PDFs)
-- 📊 Automated Excel report generation
-- ☁️ Google Drive synchronization
-- 🚀 High-performance optimization layer (K-D Tree, Bloom Filter, Vectorization)
-- 📈 Real-time performance monitoring
-- 🔒 Security validation and PII sanitization
+- 🔍 Advanced OCR engine for attachment processing (images & PDFs)
+- 📊 Automated Excel report generation with detailed analytics
+- ☁️ Google Drive synchronization with organized folder structure
+- 🚀 High-performance optimization layer (K-D Tree spatial indexing, Bloom Filter, Vectorization)
+- 📈 Real-time performance monitoring and metrics
+- 🔒 Enterprise-grade security validation and PII sanitization
 
-## 🏗️ Architecture | نظام کی تعمیر
+## 🏗️ System Architecture
 
-### Core Components | بنیادی اجزاء
+### Core Components
 
 ```
 finmatcher/
@@ -37,9 +37,11 @@ finmatcher/
 └── utils/               # Utilities (logging, error handling)
 ```
 
-## 🎯 Workflow | کام کا طریقہ
+## 🎯 Workflow & Execution Pipeline
 
-### Milestone-Based Execution
+### Milestone-Based Execution Strategy
+
+The system employs a sophisticated milestone-based execution model that optimizes resource utilization through intelligent caching and progressive processing.
 
 **Milestone 1: Meriwest Credit Card Reconciliation**
 1. Parse Meriwest PDF statement
@@ -63,7 +65,7 @@ finmatcher/
 - Identifies emails not linked to any statement
 - Generates "Other_Financial_records.xlsx"
 
-## 🔧 Technical Stack | تکنیکی ٹیکنالوجی
+## 🔧 Technology Stack
 
 ### Core Technologies
 - **Python**: 3.11-3.13
@@ -89,9 +91,11 @@ openai = ">=1.0.0"  # For DeepSeek client
 numpy = ">=2.0.0"
 ```
 
-## 📊 Matching Algorithm | میچنگ الگورتھم
+## 📊 Advanced Matching Algorithm
 
-### Composite Score Formula
+### Composite Scoring System
+
+The matching engine implements a sophisticated multi-dimensional scoring algorithm that combines financial, temporal, and semantic features to achieve high-accuracy transaction matching.
 
 ```
 Composite Score = (W_a × S_a) + (W_d × S_d) + (W_s × S_s)
@@ -125,7 +129,9 @@ S_s = cosine_similarity(embedding_txn, embedding_receipt)
 - **Amount Tolerance**: $1.00
 - **Date Variance**: ±3 days
 
-## 🚀 Performance Optimization | کارکردگی کی بہتری
+## 🚀 Performance Optimization Architecture
+
+The system implements a multi-layered optimization strategy designed to handle large-scale financial data processing with minimal latency and resource consumption.
 
 ### 1. K-D Tree Spatial Indexing
 - **Purpose**: Fast candidate filtering
@@ -149,9 +155,11 @@ S_s = cosine_similarity(embedding_txn, embedding_receipt)
 - **Pause Threshold**: 90% memory usage
 - **Auto GC**: Triggered at 90%
 
-## 📧 Email Processing | ای میل کی پروسیسنگ
+## 📧 Intelligent Email Processing
 
-### Three-Layer Financial Filter
+### Three-Layer Financial Classification Filter
+
+The system employs a cost-optimized three-tier filtering strategy that minimizes AI API costs while maintaining high classification accuracy.
 
 **Layer 1: Auto-Reject (Marketing/Spam)**
 - Keywords: unsubscribe, newsletter, discount, sale
@@ -174,9 +182,9 @@ EMAIL_ACCOUNTS=
   account3@gmail.com,app_password3,INBOX|Spam
 ```
 
-## 📄 Statement Parsing | سٹیٹمنٹ پارسنگ
+## 📄 Statement Parsing Engine
 
-### Supported Formats
+### Supported Statement Formats
 
 **1. Meriwest PDF**
 - Parser: PyMuPDF + pdfplumber
@@ -201,9 +209,9 @@ class Transaction:
     category: Optional[str]
 ```
 
-## 🖼️ OCR Engine | او سی آر انجن
+## 🖼️ OCR Processing Engine
 
-### Supported Formats
+### Supported Document Formats
 - **Images**: JPG, JPEG, PNG, GIF, BMP, TIFF
 - **Documents**: PDF
 
@@ -227,9 +235,9 @@ class Transaction:
 - **Batch Processing**: Enabled
 - **Timeout**: 30 seconds per attachment
 
-## 📊 Report Generation | رپورٹ بنانا
+## 📊 Report Generation & Distribution
 
-### Excel Reports
+### Excel Report Structure
 
 **1. Statement Reports**
 ```
@@ -265,9 +273,11 @@ FinMatcher_Excel_Reports/
 └── unmatch_attach_image/
 ```
 
-## 🗄️ Database Schema | ڈیٹا بیس سکیما
+## 🗄️ Database Schema Design
 
-### Core Tables
+### Relational Data Model
+
+The system utilizes a normalized relational schema optimized for transactional integrity and query performance.
 
 **emails**
 ```sql
@@ -311,9 +321,9 @@ FinMatcher_Excel_Reports/
 - retry_count, max_retries
 ```
 
-## 🔐 Security | سیکیورٹی
+## 🔐 Security & Compliance
 
-### Features
+### Security Features
 1. **PII Sanitization**
    - Email addresses → [EMAIL]
    - Credit cards → [CARD]
@@ -330,9 +340,9 @@ FinMatcher_Excel_Reports/
    - SQL injection prevention
    - API rate limiting
 
-## 📝 Logging | لاگنگ
+## 📝 Logging & Observability
 
-### Log Levels
+### Structured Logging System
 - **DEBUG**: Detailed diagnostic information
 - **INFO**: General informational messages
 - **WARNING**: Warning messages (80% memory)
@@ -351,9 +361,9 @@ logs/
 └── finmatcher.log
 ```
 
-## ⚙️ Configuration | ترتیبات
+## ⚙️ Configuration Management
 
-### config.yaml
+### Configuration Schema (config.yaml)
 ```yaml
 matching:
   weights:
@@ -388,9 +398,9 @@ optimization:
     error_rate: 0.001
 ```
 
-## 🚀 Installation | انسٹالیشن
+## 🚀 Installation & Setup
 
-### Prerequisites
+### System Prerequisites
 ```bash
 # Python 3.11-3.13
 python --version
@@ -435,9 +445,9 @@ python -c "from finmatcher.reports.drive_sync import DriveSync; DriveSync()._aut
 python schema/apply_schema.py
 ```
 
-## 🎮 Usage | استعمال
+## 🎮 Usage & Execution
 
-### Run Full Reconciliation
+### Running Full Reconciliation Pipeline
 ```bash
 # Windows
 run.bat
@@ -459,9 +469,9 @@ python main.py --mode milestone_4  # Unmatched
 python main.py --mode full_reconciliation
 ```
 
-## 🧪 Testing | ٹیسٹنگ
+## 🧪 Testing & Quality Assurance
 
-### Test Suite
+### Comprehensive Test Suite
 ```bash
 # Run all tests
 pytest
@@ -482,9 +492,9 @@ pytest -v
 - Performance tests
 - Property-based tests (Hypothesis)
 
-## 📈 Performance Metrics | کارکردگی کے اعداد و شمار
+## 📈 Performance Metrics & Monitoring
 
-### Target Performance
+### Target Performance Benchmarks
 - **Throughput**: Process 1M emails in < 24 hours
 - **Memory**: < 4GB RAM usage
 - **Accuracy**: > 95% match accuracy
@@ -501,9 +511,10 @@ monitor.log_performance_summary(
 )
 ```
 
-## 🔄 Migration | منتقلی
+## 🔄 Database Migration Strategy
 
-### From v1.0 to v2.0
+### Version Migration Paths
+### Migrating from v1.0 to v2.0
 ```bash
 # Migrate database
 python -m finmatcher.migration.database_migration
@@ -518,9 +529,9 @@ python -m finmatcher.migration.drive_migration
 python schema/migrate.py
 ```
 
-## 🐛 Troubleshooting | مسائل کا حل
+## 🐛 Troubleshooting Guide
 
-### Common Issues
+### Common Issues & Resolutions
 
 **1. Gmail Authentication Failed**
 ```bash
@@ -548,9 +559,11 @@ memory:
 # Verify: echo $DEEPSEEK_API_KEY
 ```
 
-## 📚 API Reference | API حوالہ
+## 📚 API Reference & Integration
 
-### EmailFetcher
+### Core API Components
+
+#### EmailFetcher
 ```python
 fetcher = EmailFetcher()
 emails = fetcher.fetch_all_emails(
@@ -559,7 +572,7 @@ emails = fetcher.fetch_all_emails(
 )
 ```
 
-### MatcherEngine
+#### MatcherEngine
 ```python
 matcher = MatcherEngine()
 matches = matcher.match_transactions_to_receipts(
@@ -568,15 +581,15 @@ matches = matcher.match_transactions_to_receipts(
 )
 ```
 
-### OCREngine
+#### OCREngine
 ```python
 ocr = OCREngine(process_pool_size=10)
 result = ocr.process_attachment(file_path)
 ```
 
-## 🤝 Contributing | تعاون
+## 🤝 Contributing Guidelines
 
-### Development Setup
+### Development Environment Setup
 ```bash
 # Install dev dependencies
 poetry install --with test
@@ -588,40 +601,43 @@ poetry run flake8 finmatcher/
 poetry run black finmatcher/
 ```
 
-### Code Style
+### Code Quality Standards
 - Follow PEP 8
 - Use type hints
 - Write docstrings
 - Add unit tests
 
-## 📄 License | لائسنس
+## 📄 License
 
 This project is proprietary software. All rights reserved.
 
-## 👥 Authors | مصنفین
+## 👥 Project Team
 
-- **Developer**: qasim0900
-- **Email**: Contact via GitHub
+- **Lead Developer**: qasim0900
+- **Contact**: Available via GitHub
 
-## 🙏 Acknowledgments | شکریہ
+## 🙏 Acknowledgments
 
-- DeepSeek AI for semantic embeddings
-- Google for Gmail & Drive APIs
-- Tesseract OCR team
-- Python community
+- DeepSeek AI for providing advanced semantic embedding capabilities
+- Google for Gmail & Drive API infrastructure
+- Tesseract OCR team for open-source OCR technology
+- Python community for exceptional library ecosystem
 
-## 📞 Support | مدد
+## 📞 Support & Contact
 
-For issues and questions:
-1. Check logs in `logs/finmatcher.log`
-2. Review troubleshooting section
-3. Open GitHub issue with:
-   - Error message
-   - Log excerpt
-   - Steps to reproduce
+For technical support, bug reports, or feature requests:
+
+1. Review application logs: `logs/finmatcher.log`
+2. Consult the troubleshooting section above
+3. Open a GitHub issue with the following information:
+   - Detailed error message
+   - Relevant log excerpts
+   - Steps to reproduce the issue
+   - System environment details
 
 ---
 
 **Version**: 3.0  
 **Last Updated**: 2024  
-**Status**: Production Ready ✅
+**Status**: Production Ready ✅  
+**Maintained By**: qasim0900
