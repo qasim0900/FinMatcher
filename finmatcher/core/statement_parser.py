@@ -14,9 +14,10 @@ from decimal import Decimal
 import pandas as pd
 import pdfplumber
 
-from database.models import Transaction
-from utils.date_parser import normalize_date
-from utils.logger import get_logger
+from finmatcher.database.models import Transaction
+from finmatcher.utils.date_parser import normalize_date
+from finmatcher.utils.logger import get_logger
+
 
 
 class StatementParser:
@@ -61,7 +62,7 @@ class StatementParser:
             ValueError: If file format is invalid or parsing fails
         """
         if not file_path.exists():
-            raise ValueError(f"Statement file not found: {file_path}")
+            raise ValueError(f"Statement file not found: {file_path} (type: {statement_type})")
         
         statement_type = statement_type.lower()
         

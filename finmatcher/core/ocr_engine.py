@@ -48,9 +48,9 @@ except ImportError:
     print("Warning: PyMuPDF not available. PDF OCR will be limited.")
     print("Install with: pip install PyMuPDF")
 
-from config.settings import get_settings
-from utils.logger import get_logger
-from utils.date_parser import extract_dates
+from finmatcher.config.settings import get_settings
+from finmatcher.utils.logger import get_logger
+from finmatcher.utils.date_parser import extract_dates
 
 
 class OCREngine:

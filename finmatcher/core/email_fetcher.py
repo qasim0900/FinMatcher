@@ -20,10 +20,10 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import queue
 
-from config.settings import get_settings, EmailAccount
-from database.cache_manager import get_cache_manager, CacheManager
-from database.models import ProcessedEmail
-from utils.logger import get_logger
+from finmatcher.config.settings import get_settings, EmailAccount
+from finmatcher.database.cache_manager import get_cache_manager, CacheManager
+from finmatcher.database.models import ProcessedEmail
+from finmatcher.utils.logger import get_logger
 from finmatcher.core.financial_filter import FinancialFilter
 
 
@@ -546,16 +546,36 @@ class EmailFetcher:
             # Decode filename
             filename = self._decode_header(filename)
             
+            # Sanitize filename to avoid path issues
+            # Remove invalid characters and limit length
+            safe_filename = "".join(c for c in filename if c.isalnum() or c in (' ', '.', '_', '-'))
+            safe_filename = safe_filename[:100]  # Limit filename length
+            
             # Create unique filename
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            safe_message_id = message_id.replace('<', '').replace('>', '').replace('/', '_')[:50]
-            unique_filename = f"{timestamp}_{safe_message_id}_{filename}"
+            safe_message_id = message_id.replace('<', '').replace('>', '').replace('/', '_')[:30]  # Shorter ID
+            unique_filename = f"{timestamp}_{safe_message_id}_{safe_filename}"
+            
+            # Ensure total path length is reasonable (Windows has 260 char limit)
+            if len(str(temp_dir / unique_filename)) > 250:
+                # Truncate filename further if needed
+                max_filename_len = 250 - len(str(temp_dir)) - len(timestamp) - len(safe_message_id) - 3
+                safe_filename = safe_filename[:max_filename_len]
+                unique_filename = f"{timestamp}_{safe_message_id}_{safe_filename}"
+            
             file_path = temp_dir / unique_filename
             
             # Save attachment
             try:
+                payload = part.get_payload(decode=True)
+                
+                # Skip if payload is None (happens with .eml attachments, calendar invites, etc.)
+                if payload is None:
+                    self.logger.debug(f"Skipping attachment {filename}: payload is None")
+                    continue
+                
                 with open(file_path, 'wb') as f:
-                    f.write(part.get_payload(decode=True))
+                    f.write(payload)
                 
                 attachments.append({
                     'filename': filename,
