@@ -1,0 +1,136 @@
+# FinMatcher v2.0 Enterprise Upgrade Configuration
+# This file contains all configuration parameters for the matching engine,
+# financial filter, parallelism, database, and system settings.
+
+# Matching Engine Configuration
+matching:
+  # Scoring weights (must sum to 1.0)
+  weights:
+    amount: 0.4      # W_a - Weight for amount score
+    date: 0.3        # W_d - Weight for date score
+    semantic: 0.3    # W_s - Weight for semantic score
+  
+  # Matching thresholds
+  thresholds:
+    amount_tolerance: 1.00      # Maximum amount difference in dollars
+    date_variance: 3            # Maximum date difference in days
+    exact_match: 0.98           # Composite score threshold for exact match
+    high_confidence: 0.85       # Composite score threshold for high confidence
+  
+  # Algorithm parameters
+  algorithm:
+    lambda_decay: 2.0           # Exponential decay rate for amount score
+
+# Financial Email Filter Configuration
+financial_filter:
+  enable_ai: true               # Use AI for ambiguous emails
+  
+  # Keywords for auto-accept (financial emails)
+  financial_keywords:
+    - receipt
+    - invoice
+    - bill
+    - payment
+    - transaction
+    - order confirmation
+    - purchase
+    - statement
+    - total amount
+    - amount due
+    - payment received
+    - order #
+    - invoice #
+    - account statement
+    - payment confirmation
+  
+  # Keywords for auto-reject (marketing/spam emails)
+  marketing_spam_keywords:
+    - unsubscribe
+    - newsletter
+    - discount
+    - sale
+    - offer
+    - limited time
+    - click here
+    - subscribe
+    - job offer
+    - resume
+    - meeting
+    - promotion
+    - deal
+    - coupon
+    - free shipping
+    - "% off"
+  
+  # Target percentage of emails filtered by rules (not AI)
+  target_rule_based_percentage: 0.80  # 80% cost reduction target
+
+# DeepSeek AI Configuration
+deepseek:
+  api_key: ${DEEPSEEK_API_KEY}  # Load from environment variable
+  timeout: 30                    # API timeout in seconds
+  max_tokens: 512                # Maximum tokens for text truncation
+
+# Parallelism Configuration
+parallelism:
+  thread_pool_size: 50           # Number of threads for I/O operations
+  process_pool_size: 10          # Number of processes for CPU-bound operations
+
+# Database Configuration
+database:
+  path: "finmatcher.db"          # SQLite database file path
+  wal_mode: true                 # Enable Write-Ahead Logging mode
+
+# Checkpoint Configuration
+checkpoints:
+  interval: 1000                 # Save checkpoint every N records
+
+# Memory Management Configuration
+memory:
+  chunk_size: 1000               # Records per chunk for streaming
+  warning_threshold: 0.80        # Log warning at 80% memory usage
+  pause_threshold: 0.90          # Pause processing at 90% memory usage
+
+# Logging Configuration
+logging:
+  level: "INFO"                  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  max_file_size: 104857600       # Maximum log file size (100MB)
+  retention_days: 90             # Log retention period
+  sanitize_pii: true             # Sanitize personally identifiable information
+
+# Google Drive Configuration
+drive:
+  credentials_path: "finmatcher/auth_files/credentials.json"
+  root_folder: "FinMatcher_Excel_Reports"
+
+# Optimization Configuration (v2.1 Mathematical Performance Optimization)
+optimization:
+  enabled: true                  # Enable optimization layer
+  
+  # K-D Tree Spatial Indexing
+  kdtree:
+    leaf_size: 40                # Leaf size for K-D tree (10-100)
+    cache_enabled: true          # Enable K-D tree caching
+    cache_path: ".kiro/cache"    # Cache directory path
+    cache_expiration_days: 7     # Cache expiration in days
+  
+  # Vectorized Batch Scoring
+  vectorization:
+    batch_size: 100000           # Batch size for vectorized operations (1K-1M)
+    enabled: true                # Enable vectorized scoring
+  
+  # Bloom Filter Deduplication
+  bloom_filter:
+    enabled: true                # Enable Bloom filter deduplication
+    initial_capacity: 100000     # Initial capacity (100K items)
+    error_rate: 0.001            # False positive rate (0.1%)
+  
+  # Performance Settings
+  performance:
+    query_timeout_seconds: 5     # Query timeout in seconds
+    memory_limit_mb: 1024        # Memory limit in MB
+  
+  # Monitoring Settings
+  monitoring:
+    enabled: true                # Enable metrics collection
+    persist_interval: 1000       # Persist metrics every N operations
