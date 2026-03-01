@@ -54,91 +54,103 @@ class CacheManager:
         """
         Initialize database schema.
         
-        Creates tables for:
-        - processed_emails: Track processed emails for deduplication
-        - transactions_cache: Store statement transactions
-        - receipts_cache: Store email receipts
-        - matches_cache: Store matching results
+        Uses existing schema created by finmatcher_complete_schema.sql
+        Only adds missing columns if needed for backward compatibility.
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
             
-            # Table for processed emails (deduplication)
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS processed_emails (
-                    email_id TEXT PRIMARY KEY,
-                    message_id TEXT NOT NULL,
-                    md5_hash TEXT NOT NULL UNIQUE,
-                    processed_timestamp TIMESTAMP NOT NULL,
-                    account_email TEXT NOT NULL,
-                    folder TEXT DEFAULT 'INBOX',
-                    has_attachments BOOLEAN DEFAULT FALSE,
-                    is_financial BOOLEAN DEFAULT FALSE
-                )
-            ''')
+            # Check if processed_emails table exists (from new schema)
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'processed_emails'
+                );
+            """)
+            table_exists = cursor.fetchone()[0]
             
-            # Index on md5_hash for fast lookups
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_md5_hash 
-                ON processed_emails(md5_hash)
-            ''')
-            
-            # Table for transactions cache
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS transactions_cache (
-                    transaction_id TEXT PRIMARY KEY,
-                    date TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    amount DECIMAL(10,2) NOT NULL,
-                    status TEXT DEFAULT 'UNMATCHED',
-                    label TEXT,
-                    receipt_source TEXT,
-                    reference_number TEXT,
-                    transaction_type TEXT DEFAULT 'debit',
-                    balance DECIMAL(10,2),
-                    statement_name TEXT
-                )
-            ''')
-            
-            # Table for receipts cache
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS receipts_cache (
-                    receipt_id TEXT PRIMARY KEY,
-                    email_id TEXT NOT NULL,
-                    sender_name TEXT NOT NULL,
-                    sender_email TEXT NOT NULL,
-                    subject TEXT NOT NULL,
-                    received_date TEXT NOT NULL,
-                    amount DECIMAL(10,2),
-                    transaction_date TEXT,
-                    merchant_name TEXT,
-                    attachment_path TEXT,
-                    email_link TEXT,
-                    receiver_email TEXT,
-                    source TEXT DEFAULT 'email_body',
-                    extracted_text TEXT,
-                    confidence_score DECIMAL(5,4),
-                    is_financial BOOLEAN DEFAULT TRUE,
-                    matched_transaction_id TEXT
-                )
-            ''')
-            
-            # Table for matches cache
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS matches_cache (
-                    match_id TEXT PRIMARY KEY,
-                    transaction_id TEXT NOT NULL,
-                    receipt_id TEXT NOT NULL,
-                    match_stage TEXT NOT NULL,
-                    confidence_score DECIMAL(5,4) NOT NULL,
-                    amount_match_score DECIMAL(5,4) DEFAULT 0.0,
-                    date_match_score DECIMAL(5,4) DEFAULT 0.0,
-                    semantic_match_score DECIMAL(5,4) DEFAULT 0.0,
-                    matched_at TIMESTAMP
-                )
-            ''')
+            if not table_exists:
+                # Fallback: Create old schema if new schema not found
+                self._create_legacy_schema(cursor)
+            else:
+                # New schema exists, ensure compatibility columns
+                self._ensure_compatibility_columns(cursor)
             
             conn.commit()
+    
+    def _create_legacy_schema(self, cursor):
+        """Create legacy schema for backward compatibility"""
+        # Table for processed emails (deduplication)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS processed_emails_legacy (
+                email_id TEXT PRIMARY KEY,
+                message_id TEXT NOT NULL,
+                md5_hash TEXT NOT NULL UNIQUE,
+                processed_timestamp TIMESTAMP NOT NULL,
+                account_email TEXT NOT NULL,
+                folder TEXT DEFAULT 'INBOX',
+                has_attachments BOOLEAN DEFAULT FALSE,
+                is_financial BOOLEAN DEFAULT FALSE
+            )
+        ''')
+        
+        # Table for transactions cache
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS transactions (
+                id SERIAL PRIMARY KEY,
+                transaction_id TEXT UNIQUE,
+                transaction_date DATE NOT NULL,
+                description TEXT NOT NULL,
+                amount DECIMAL(15,2) NOT NULL,
+                statement_source TEXT,
+                is_matched BOOLEAN DEFAULT FALSE
+            )
+        ''')
+        
+        # Table for receipts cache
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS receipts (
+                id SERIAL PRIMARY KEY,
+                email_id TEXT NOT NULL,
+                vendor_name TEXT,
+                transaction_date DATE,
+                amount DECIMAL(15,2),
+                raw_text TEXT,
+                is_matched BOOLEAN DEFAULT FALSE
+            )
+        ''')
+    
+    def _ensure_compatibility_columns(self, cursor):
+        """Ensure new schema has columns needed by cache_manager"""
+        try:
+            # Add account_email column if missing
+            cursor.execute("""
+                ALTER TABLE processed_emails 
+                ADD COLUMN IF NOT EXISTS account_email TEXT;
+            """)
+            
+            # Add folder column if missing
+            cursor.execute("""
+                ALTER TABLE processed_emails 
+                ADD COLUMN IF NOT EXISTS folder TEXT DEFAULT 'INBOX';
+            """)
+            
+            # Add is_financial column if missing
+            cursor.execute("""
+                ALTER TABLE processed_emails 
+                ADD COLUMN IF NOT EXISTS is_financial BOOLEAN DEFAULT FALSE;
+            """)
+            
+            # Add transaction_id to transactions if missing
+            cursor.execute("""
+                ALTER TABLE transactions 
+                ADD COLUMN IF NOT EXISTS transaction_id TEXT;
+            """)
+            
+        except Exception as e:
+            # Columns might already exist, that's okay
+            pass
     
     @contextmanager
     def _get_connection(self):
@@ -180,13 +192,11 @@ class CacheManager:
             
         Validates Requirement 6.3: Skip emails with Message-IDs already in database
         """
-        md5_hash = self.calculate_md5_hash(message_id)
-        
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                'SELECT 1 FROM processed_emails WHERE md5_hash = %s LIMIT 1',
-                (md5_hash,)
+                'SELECT 1 FROM processed_emails WHERE message_id = %s LIMIT 1',
+                (message_id,)
             )
             return cursor.fetchone() is not None
     
@@ -200,26 +210,29 @@ class CacheManager:
         Returns:
             True if successful, False otherwise
             
-        Validates Requirement 6.2: Store Message-ID hash in database
+        Validates Requirement 6.2: Store Message-ID in database
         """
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
                     INSERT INTO processed_emails 
-                    (email_id, message_id, md5_hash, processed_timestamp, 
-                     account_email, folder, has_attachments, is_financial)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (email_id) DO UPDATE SET
-                        processed_timestamp = EXCLUDED.processed_timestamp
+                    (message_id, subject, sender, date,
+                     has_attachment, processing_status,
+                     account_email, folder, is_financial)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (message_id) DO UPDATE SET
+                        processing_status = EXCLUDED.processing_status,
+                        updated_at = CURRENT_TIMESTAMP
                 ''', (
-                    processed_email.email_id,
                     processed_email.message_id,
-                    processed_email.md5_hash,
+                    getattr(processed_email, 'subject', ''),
+                    getattr(processed_email, 'sender', ''),
                     processed_email.processed_timestamp,
+                    processed_email.has_attachments,
+                    'processed',
                     processed_email.account_email,
                     processed_email.folder,
-                    processed_email.has_attachments,
                     processed_email.is_financial
                 ))
                 conn.commit()
@@ -248,13 +261,14 @@ class CacheManager:
                 # Prepare batch data
                 batch_data = [
                     (
-                        email.email_id,
                         email.message_id,
-                        email.md5_hash,
+                        getattr(email, 'subject', ''),
+                        getattr(email, 'sender', ''),
                         email.processed_timestamp,
+                        email.has_attachments,
+                        'processed',
                         email.account_email,
                         email.folder,
-                        email.has_attachments,
                         email.is_financial
                     )
                     for email in processed_emails
@@ -265,11 +279,13 @@ class CacheManager:
                     cursor,
                     '''
                     INSERT INTO processed_emails 
-                    (email_id, message_id, md5_hash, processed_timestamp, 
-                     account_email, folder, has_attachments, is_financial)
+                    (message_id, subject, sender, date,
+                     has_attachment, processing_status,
+                     account_email, folder, is_financial)
                     VALUES %s
-                    ON CONFLICT (email_id) DO UPDATE SET
-                        processed_timestamp = EXCLUDED.processed_timestamp
+                    ON CONFLICT (message_id) DO UPDATE SET
+                        processing_status = EXCLUDED.processing_status,
+                        updated_at = CURRENT_TIMESTAMP
                     ''',
                     batch_data
                 )

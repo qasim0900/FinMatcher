@@ -157,16 +157,18 @@ class ProcessedEmail:
     """
     Represents a processed email for deduplication tracking.
     
-    Validates Requirement 6.2: Track processed emails using MD5 hash
+    Updated to work with new schema (message_id is primary key)
     """
-    email_id: str
     message_id: str
-    md5_hash: str
     processed_timestamp: datetime
     account_email: str
+    email_id: str = ""  # Optional, for backward compatibility
+    md5_hash: str = ""  # Optional, for backward compatibility
     folder: str = "INBOX"
     has_attachments: bool = False
     is_financial: bool = False
+    subject: str = ""
+    sender: str = ""
     
     def to_dict(self) -> dict:
         """Convert to dictionary for database storage."""
@@ -178,21 +180,25 @@ class ProcessedEmail:
             'account_email': self.account_email,
             'folder': self.folder,
             'has_attachments': self.has_attachments,
-            'is_financial': self.is_financial
+            'is_financial': self.is_financial,
+            'subject': self.subject,
+            'sender': self.sender
         }
     
     @classmethod
     def from_dict(cls, data: dict) -> 'ProcessedEmail':
         """Create ProcessedEmail from dictionary."""
         return cls(
-            email_id=data['email_id'],
             message_id=data['message_id'],
-            md5_hash=data['md5_hash'],
             processed_timestamp=datetime.fromisoformat(data['processed_timestamp']),
             account_email=data['account_email'],
+            email_id=data.get('email_id', ''),
+            md5_hash=data.get('md5_hash', ''),
             folder=data.get('folder', 'INBOX'),
             has_attachments=data.get('has_attachments', False),
-            is_financial=data.get('is_financial', False)
+            is_financial=data.get('is_financial', False),
+            subject=data.get('subject', ''),
+            sender=data.get('sender', '')
         )
 
 
