@@ -146,19 +146,6 @@ def generate_report():
         print(f"   📊 Processing runs recorded: {stats_count}")
     else:
         print("   ⚠️  No processing statistics available yet")
-        FROM matching_statistics
-        ORDER BY run_date DESC
-        LIMIT 5
-    """)
-    
-    stats = cur.fetchall()
-    if stats:
-        print("   Recent Processing Runs:")
-        for stat in stats:
-            run_date, emails, matches, time_sec, match_rate = stat
-            print(f"   📅 {run_date}: {emails} emails, {matches} matches, {time_sec}s, {match_rate:.1f}% match rate")
-    else:
-        print("   ⚠️  No processing statistics available yet")
     
     print()
     
