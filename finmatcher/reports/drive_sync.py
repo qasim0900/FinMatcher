@@ -18,8 +18,8 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from googleapiclient.errors import HttpError
 
-from utils.logger import get_logger
-from config.settings import get_settings
+from finmatcher.utils.logger import get_logger
+from finmatcher.config.settings import get_settings
 
 
 logger = get_logger(__name__)

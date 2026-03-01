@@ -27,4 +27,10 @@ echo "Working directory: $(pwd)"
 echo "PYTHONPATH: $PYTHONPATH"
 echo
 
-python main.py "$@"
+# If no arguments provided, use full_reconciliation mode
+if [ $# -eq 0 ]; then
+    echo "Running in full_reconciliation mode..."
+    python main.py --mode full_reconciliation
+else
+    python main.py "$@"
+fi

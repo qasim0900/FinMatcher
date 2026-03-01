@@ -16,7 +16,7 @@ from typing import Optional, List, Set, Dict
 from datetime import datetime
 from contextlib import contextmanager
 
-from database.models import ProcessedEmail, Transaction, Receipt, Match
+from finmatcher.database.models import ProcessedEmail, Transaction, Receipt, Match
 
 
 class CacheManager:
