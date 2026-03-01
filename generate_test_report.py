@@ -80,11 +80,23 @@ def generate_report():
     cur.execute("SELECT COUNT(*) FROM transactions")
     total_transactions = cur.fetchone()[0]
     
-    cur.execute("SELECT COUNT(DISTINCT statement_name) FROM transactions")
-    unique_sources = cur.fetchone()[0]
+    # Check if statement_name column exists
+    cur.execute("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='transactions' 
+        AND column_name IN ('statement_name', 'statement_source')
+    """)
+    statement_col = cur.fetchone()
     
-    print(f"   💳 Total Transactions: {total_transactions}")
-    print(f"   🏦 Unique Statement Sources: {unique_sources}")
+    if statement_col:
+        col_name = statement_col[0]
+        cur.execute(f"SELECT COUNT(DISTINCT {col_name}) FROM transactions")
+        unique_sources = cur.fetchone()[0]
+        print(f"   💳 Total Transactions: {total_transactions}")
+        print(f"   🏦 Unique Statement Sources: {unique_sources}")
+    else:
+        print(f"   💳 Total Transactions: {total_transactions}")
     
     print()
     
