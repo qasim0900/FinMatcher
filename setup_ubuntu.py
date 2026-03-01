@@ -57,6 +57,9 @@ def load_database_config():
     with open(env_file, 'r') as f:
         for line in f:
             line = line.strip()
+            # Skip empty lines and comments
+            if not line or line.startswith('#'):
+                continue
             if line.startswith('DATABASE_URL='):
                 database_url = line.split('=', 1)[1]
                 break

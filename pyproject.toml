@@ -30,6 +30,7 @@ pillow = ">=10.0.0,<11.0.0"
 scipy = ">=1.11.0,<2.0.0"
 pybloom-live = "^4.0.0"
 watchdog = "^6.0.0"
+psycopg2-binary = "^2.9.11"
 
 [tool.poetry.group.test.dependencies]
 pytest = ">=8.0.0,<9.0.0"
