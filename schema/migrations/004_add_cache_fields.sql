@@ -3,6 +3,10 @@
 -- Created: 2026-03-01
 -- Author: FinMatcher Team
 
+-- Add email_id column (auto-increment primary key for cache_manager)
+ALTER TABLE processed_emails 
+ADD COLUMN IF NOT EXISTS email_id SERIAL;
+
 -- Add md5_hash column for deduplication
 ALTER TABLE processed_emails 
 ADD COLUMN IF NOT EXISTS md5_hash TEXT;
@@ -38,6 +42,10 @@ ON processed_emails(account_email);
 -- Create index on is_financial
 CREATE INDEX IF NOT EXISTS idx_is_financial 
 ON processed_emails(is_financial);
+
+-- Create index on email_id
+CREATE INDEX IF NOT EXISTS idx_email_id 
+ON processed_emails(email_id);
 
 -- Record migration
 INSERT INTO schema_migrations (version, name, description)
