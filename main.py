@@ -14,18 +14,18 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 
-from config.settings import get_settings
-from database.cache_manager import get_cache_manager
-from utils.logger import get_logger
-from utils.error_handler import get_shutdown_handler, handle_critical_error
-from utils.security_validator import validate_security_on_startup
+from finmatcher.config.settings import get_settings
+from finmatcher.database.cache_manager import get_cache_manager
+from finmatcher.utils.logger import get_logger
+from finmatcher.utils.error_handler import get_shutdown_handler, handle_critical_error
+from finmatcher.utils.security_validator import validate_security_on_startup
 
-from core.email_fetcher import EmailFetcher
-from core.statement_parser import StatementParser
-from core.ocr_engine import OCREngine
-from core.matcher_engine import MatcherEngine
-from reports.excel_generator import ExcelReportGenerator
-from reports.drive_sync import DriveSync
+from finmatcher.core.email_fetcher import EmailFetcher
+from finmatcher.core.statement_parser import StatementParser
+from finmatcher.core.ocr_engine import OCREngine
+from finmatcher.core.matcher_engine import MatcherEngine
+from finmatcher.reports.excel_generator import ExcelReportGenerator
+from finmatcher.reports.drive_sync import DriveSync
 
 
 class FinMatcherOrchestrator:
