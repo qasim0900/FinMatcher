@@ -86,13 +86,8 @@ class FinMatcherOrchestrator:
             transactions = self.statement_parser.parse_statement(statement_path, "meriwest")
             self.logger.info(f"Parsed {len(transactions)} transactions from Meriwest statement")
             
-            # Get date range for email search (±3 days from statement dates)
-            if transactions:
-                min_date = min(datetime.strptime(t.date, '%Y-%m-%d') for t in transactions) - timedelta(days=3)
-                max_date = max(datetime.strptime(t.date, '%Y-%m-%d') for t in transactions) + timedelta(days=3)
-                date_range = (min_date, max_date)
-            else:
-                date_range = None
+            # Fetch ALL emails (no date range restriction)
+            date_range = None
             
             # Fetch emails (will use cache if already fetched)
             self.logger.info("Fetching emails from all accounts...")
