@@ -58,7 +58,7 @@ class FinMatcherOrchestrator:
         self.statement_parser = StatementParser()
         self.ocr_engine = OCREngine()
         self.matcher_engine = MatcherEngine()
-        self.report_generator = ExcelReportGenerator()
+        self.report_generator = ExcelReportGenerator(output_dir='reports')
         self.drive_sync = DriveSync()
         
         # Register cleanup callbacks
