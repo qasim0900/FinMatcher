@@ -412,6 +412,11 @@ pip install poetry
 # Windows: Download from GitHub
 # Linux: sudo apt-get install tesseract-ocr
 # Mac: brew install tesseract
+
+# PostgreSQL (recommended for production)
+# Ubuntu: sudo apt-get install postgresql postgresql-contrib
+# Windows: Download from postgresql.org
+# Mac: brew install postgresql
 ```
 
 ### Setup Steps
@@ -440,9 +445,22 @@ cp .env.example .env
 python -c "from finmatcher.reports.drive_sync import DriveSync; DriveSync()._authenticate()"
 ```
 
-5. **Initialize Database**
+5. **Initialize Database (Ubuntu)**
 ```bash
-python schema/apply_schema.py
+# Single command for complete setup
+python setup_ubuntu.py
+```
+
+This unified setup script will:
+- Create the database if it doesn't exist
+- Run all migrations from `schema/migrations/`
+- Validate all required tables
+- Confirm the database is ready for use
+
+For ongoing migration management, use:
+```bash
+python migrate.py status  # Check migration status
+python migrate.py up      # Apply new migrations
 ```
 
 ## 🎮 Usage & Execution
@@ -513,21 +531,47 @@ monitor.log_performance_summary(
 
 ## 🔄 Database Migration Strategy
 
-### Version Migration Paths
-### Migrating from v1.0 to v2.0
-```bash
-# Migrate database
-python -m finmatcher.migration.database_migration
+### Unified Migration System
 
-# Migrate Drive folders
-python -m finmatcher.migration.drive_migration
+FinMatcher uses a streamlined migration system with clear entry points:
+
+**For Initial Setup (Ubuntu):**
+```bash
+python setup_ubuntu.py
+```
+This single script handles complete database setup: creates the database, runs all migrations from `schema/migrations/`, and validates the installation.
+
+**For Ongoing Migrations:**
+```bash
+# Check current migration status
+python migrate.py status
+
+# Apply pending migrations
+python migrate.py up
+
+# Rollback last migration
+python migrate.py down
 ```
 
-### From v2.0 to v3.0
-```bash
-# Apply v3 schema
-python schema/migrate.py
-```
+### Migration Files
+
+All migrations are stored in `schema/migrations/` and tracked in the `schema_migrations` table:
+
+- `001_initial_schema.sql` - Creates all base tables
+- `002_add_optimization_fields.sql` - Adds performance optimization fields
+- `003_add_performance_indexes.sql` - Creates indexes for query performance
+
+### Deprecated Files
+
+The following files have been deprecated and replaced by the unified system:
+
+- ❌ `schema/migrate.py` → Use `migrate.py` instead
+- ❌ `complete_setup.sh` → Use `setup_ubuntu.py` instead
+- ❌ `setup_linux.sh` → Use `setup_ubuntu.py` instead
+- ❌ `reset_and_migrate.sh` → Use `migrate.py` instead
+- ❌ `fix_database.sh` → Use `setup_ubuntu.py` instead
+
+These deprecated scripts have been moved to `.deprecated` extensions with notices pointing to the new unified system.
 
 ## 🐛 Troubleshooting Guide
 

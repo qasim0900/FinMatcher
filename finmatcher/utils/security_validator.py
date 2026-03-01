@@ -315,8 +315,6 @@ class SecurityValidator:
         exclude_files = [
             'configure_and_test.py',
             'test_',  # Any file starting with test_
-            'comprehensive_project_test.py',
-            'comprehensive_validation_test.py',
             'performance_analysis.py',
             'integration_plan.py',
         ]

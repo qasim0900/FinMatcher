@@ -10,15 +10,38 @@ import psycopg2
 from pathlib import Path
 from datetime import datetime
 import argparse
+from urllib.parse import urlparse
+from dotenv import load_dotenv
 
-# Database configuration
-DB_CONFIG = {
-    'host': 'localhost',
-    'port': 5432,
-    'database': 'FinMatcher',
-    'user': 'postgres',
-    'password': 'Teeli@322'
-}
+# Load environment variables
+load_dotenv()
+
+# Database configuration from environment
+def get_db_config():
+    """Load database configuration from DATABASE_URL environment variable"""
+    database_url = os.getenv('DATABASE_URL')
+    
+    if database_url:
+        # Parse DATABASE_URL
+        parsed = urlparse(database_url)
+        return {
+            'host': parsed.hostname or 'localhost',
+            'port': parsed.port or 5432,
+            'database': parsed.path.lstrip('/'),
+            'user': parsed.username,
+            'password': parsed.password.replace('%40', '@') if parsed.password else None
+        }
+    else:
+        # Fallback to hardcoded config for backward compatibility
+        return {
+            'host': 'localhost',
+            'port': 5432,
+            'database': 'FinMatcher',
+            'user': 'postgres',
+            'password': 'Teeli@322'
+        }
+
+DB_CONFIG = get_db_config()
 
 MIGRATIONS_DIR = Path('schema/migrations')
 
@@ -35,10 +58,10 @@ class MigrationManager:
         try:
             self.conn = psycopg2.connect(**self.config)
             self.cursor = self.conn.cursor()
-            print(f"✅ Connected to database: {self.config['database']}")
+            print(f"[OK] Connected to database: {self.config['database']}")
             return True
         except Exception as e:
-            print(f"❌ Database connection failed: {e}")
+            print(f"[ERROR] Database connection failed: {e}")
             return False
     
     def disconnect(self):
@@ -60,10 +83,10 @@ class MigrationManager:
                 )
             """)
             self.conn.commit()
-            print("✅ Migrations tracking table ready")
+            print("[OK] Migrations tracking table ready")
             return True
         except Exception as e:
-            print(f"❌ Failed to create migrations table: {e}")
+            print(f"[ERROR] Failed to create migrations table: {e}")
             self.conn.rollback()
             return False
     
@@ -76,7 +99,7 @@ class MigrationManager:
             version = self.cursor.fetchone()[0]
             return version
         except Exception as e:
-            print(f"⚠️  Could not get current version: {e}")
+            print(f"[WARN] Could not get current version: {e}")
             return 0
     
     def get_applied_migrations(self):
@@ -89,7 +112,7 @@ class MigrationManager:
             """)
             return self.cursor.fetchall()
         except Exception as e:
-            print(f"⚠️  Could not get applied migrations: {e}")
+            print(f"[WARN] Could not get applied migrations: {e}")
             return []
     
     def get_pending_migrations(self):
@@ -107,7 +130,7 @@ class MigrationManager:
                 if version > current_version:
                     pending.append((version, migration_file))
             except ValueError:
-                print(f"⚠️  Invalid migration filename: {migration_file.name}")
+                print(f"[WARN] Invalid migration filename: {migration_file.name}")
         
         return pending
     
@@ -126,11 +149,11 @@ class MigrationManager:
             self.cursor.execute(sql)
             self.conn.commit()
             
-            print(f"✅ Migration {version} applied successfully")
+            print(f"[OK] Migration {version} applied successfully")
             return True
             
         except Exception as e:
-            print(f"❌ Migration {version} failed: {e}")
+            print(f"[ERROR] Migration {version} failed: {e}")
             self.conn.rollback()
             return False
     
@@ -146,7 +169,7 @@ class MigrationManager:
         pending = self.get_pending_migrations()
         
         if not pending:
-            print("✅ Database is up to date. No pending migrations.")
+            print("[OK] Database is up to date. No pending migrations.")
             return True
         
         print(f"Found {len(pending)} pending migration(s)")
@@ -158,19 +181,19 @@ class MigrationManager:
         # Apply migrations
         for version, migration_file in pending:
             if not self.apply_migration(version, migration_file):
-                print(f"\n❌ Migration stopped at version {version}")
+                print(f"\n[ERROR] Migration stopped at version {version}")
                 return False
         
         new_version = self.get_current_version()
         print(f"\n{'='*60}")
-        print(f"✅ Migration complete!")
-        print(f"Database version: {current_version} → {new_version}")
+        print(f"[OK] Migration complete!")
+        print(f"Database version: {current_version} -> {new_version}")
         print(f"{'='*60}")
         return True
     
     def migrate_down(self, target_version):
         """Rollback to target version (not implemented - requires down migrations)"""
-        print("⚠️  Rollback not implemented. Please restore from backup.")
+        print("[WARN] Rollback not implemented. Please restore from backup.")
         return False
     
     def status(self):
@@ -201,7 +224,7 @@ class MigrationManager:
             for version, migration_file in pending:
                 print(f"  [{version}] {migration_file.name}")
         else:
-            print("\n✅ No pending migrations")
+            print("\n[OK] No pending migrations")
         
         print("\n" + "="*60)
     
@@ -256,7 +279,7 @@ END $$;
         with open(filepath, 'w') as f:
             f.write(template)
         
-        print(f"✅ Created migration: {filepath}")
+        print(f"[OK] Created migration: {filepath}")
         print(f"   Version: {next_version}")
         print(f"   Edit the file to add your migration SQL")
         
@@ -282,7 +305,7 @@ def main():
     # Handle create command (doesn't need database connection)
     if args.command == 'create':
         if not args.name:
-            print("❌ --name is required for create command")
+            print("[ERROR] --name is required for create command")
             return 1
         manager.create_migration(args.name, args.description or "")
         return 0
@@ -300,14 +323,14 @@ def main():
             success = manager.migrate_up(args.version)
         elif args.command == 'down':
             if not args.version:
-                print("❌ --version is required for down command")
+                print("[ERROR] --version is required for down command")
                 return 1
             success = manager.migrate_down(args.version)
         elif args.command == 'status':
             manager.status()
             success = True
         else:
-            print(f"❌ Unknown command: {args.command}")
+            print(f"[ERROR] Unknown command: {args.command}")
             success = False
         
         return 0 if success else 1

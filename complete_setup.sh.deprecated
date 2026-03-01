@@ -1,11 +1,31 @@
 #!/bin/bash
 # FinMatcher - Complete Setup Script
 # Fixes all issues and sets up the system
+#
+# ============================================================================
+# DEPRECATED: This script is deprecated and should not be used.
+# 
+# Please use the unified migration system instead:
+#   - For initial setup: python setup_ubuntu.py
+#   - For migrations: python migrate.py up
+#
+# The unified system provides:
+#   - Cross-platform Python-based setup
+#   - Integrated migration tracking via schema_migrations table
+#   - Better error handling and validation
+#   - Single source of truth for all database operations
+#
+# This file is kept for reference only.
+# ============================================================================
 
 set -e  # Exit on error
 
 echo "========================================================================"
 echo "  FinMatcher - Complete Setup & Fix"
+echo "========================================================================"
+echo
+echo "WARNING: This script is DEPRECATED!"
+echo "Please use: python setup_ubuntu.py"
 echo "========================================================================"
 echo
 

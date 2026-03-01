@@ -17,15 +17,27 @@ This directory contains the PostgreSQL database schema for FinMatcher v3.0 distr
 ### For Existing v2 Installations (Recommended)
 
 ```bash
-# Migrate from v2 to v3 (preserves existing data)
-python schema/migrate.py
+# DEPRECATED: Old migration approach
+# python schema/migrate.py
+
+# Use the unified migration system instead:
+# For initial setup on Ubuntu:
+python setup_ubuntu.py
+
+# For running migrations:
+python migrate.py up
 ```
 
 ### For Fresh Installations
 
 ```bash
-# Apply v3 schema from scratch
-python schema/apply_schema.py
+# Use the unified setup script
+python setup_ubuntu.py
+
+# This will:
+# - Create the database if it doesn't exist
+# - Run all migrations from schema/migrations/
+# - Validate the setup
 ```
 
 ### Test the Schema

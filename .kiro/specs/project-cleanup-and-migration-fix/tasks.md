@@ -1,0 +1,138 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Fault Condition** - Multiple Migration Systems Fragmentation
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the fragmentation exists
+  - **Scoped PBT Approach**: Scope the property to concrete failing cases - multiple migration systems exist without integration
+  - Test that multiple migration systems exist independently: verify migrate.py, schema/migrate.py, and complete_setup.sh all exist and operate without integration
+  - Test that no unified setup script exists: attempt to find setup_ubuntu.py (should not exist on unfixed code)
+  - Test that redundant files exist: count test files (comprehensive_project_test.py, comprehensive_validation_test.py, test_phase1_integration.py), setup scripts (complete_setup.sh, setup_linux.sh, reset_and_migrate.sh, fix_database.sh), and cleanup scripts (cleanup.py, cleanup.bat, deep_cleanup.bat)
+  - Test that migration state is inconsistent: verify schema/migrate.py doesn't update schema_migrations table that migrate.py uses
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bug exists)
+  - Document counterexamples found: "Found 3 separate migration systems", "No unified setup script exists", "Found X redundant test files, Y redundant setup scripts, Z redundant cleanup scripts"
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - Existing Migration Execution and Application Functionality
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for existing migrations and application functionality
+  - Run existing migrations (001_initial_schema.sql, 002_add_optimization_fields.sql, 003_add_performance_indexes.sql) on unfixed system and capture schema state
+  - Observe that main.py runs correctly on unfixed system
+  - Observe that .env and config.yaml are read correctly on unfixed system
+  - Observe that finmatcher package modules import without errors on unfixed system
+  - Write property-based tests capturing observed behavior patterns:
+    - For all existing migration files, verify they execute and produce the same schema structure (tables: processed_emails, transactions, receipts, matches, jobs, reports, audit_log, metrics, schema_migrations)
+    - For all application database operations, verify they continue to work correctly
+    - For all configuration reads, verify credentials and settings are read correctly
+    - For all module imports, verify no import errors occur
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
+
+- [x] 3. Consolidate migration system and clean up project
+
+  - [x] 3.1 Create unified setup script for Ubuntu
+    - Create setup_ubuntu.py in project root
+    - Implement database connection check using PostgreSQL credentials from .env
+    - Implement database creation if not exists
+    - Integrate with migrate.py to create migrations table and apply all migrations from schema/migrations/
+    - Implement validation by checking all required tables exist (processed_emails, transactions, receipts, matches, jobs, reports, audit_log, metrics, schema_migrations)
+    - Implement test query execution to verify database is functional
+    - Provide clear success/failure messages with actionable error information
+    - _Bug_Condition: isBugCondition(deployment_context) where COUNT(migration_systems) > 1 AND NOT EXISTS unified_setup_script_
+    - _Expected_Behavior: Single unified Python script handles complete database setup and migration in one command_
+    - _Preservation: Existing migration files execute correctly, database schema remains identical, application continues to function_
+    - _Requirements: 2.1, 2.3, 2.5, 2.6_
+
+  - [x] 3.2 Deprecate redundant migration scripts
+    - Move schema/migrate.py to schema/migrate.py.deprecated
+    - Move complete_setup.sh to complete_setup.sh.deprecated
+    - Add deprecation notices in both files pointing to setup_ubuntu.py and migrate.py as the unified system
+    - Update any documentation references to these deprecated scripts
+    - _Bug_Condition: Multiple migration approaches exist without integration_
+    - _Expected_Behavior: One unified migration approach using migrate.py_
+    - _Preservation: Existing migrations continue to work through migrate.py_
+    - _Requirements: 2.1, 2.6_
+
+  - [x] 3.3 Remove redundant test files
+    - Verify comprehensive_project_test.py is not actively used, then remove
+    - Verify comprehensive_validation_test.py is not actively used, then remove
+    - Verify test_phase1_integration.py is not actively used (phase 1 complete), then remove
+    - Document which test files remain and their purposes
+    - _Bug_Condition: Multiple redundant test files create confusion_
+    - _Expected_Behavior: Only essential test files with clear purposes remain_
+    - _Preservation: Active test functionality is preserved_
+    - _Requirements: 2.2_
+
+  - [x] 3.4 Remove redundant setup scripts
+    - Remove setup_linux.sh (replaced by setup_ubuntu.py)
+    - Remove reset_and_migrate.sh (functionality in migrate.py)
+    - Remove fix_database.sh (functionality in setup_ubuntu.py)
+    - Verify no active code references these scripts
+    - _Bug_Condition: Multiple overlapping setup scripts with unclear purposes_
+    - _Expected_Behavior: One primary setup script for Ubuntu_
+    - _Preservation: Setup functionality is preserved in unified script_
+    - _Requirements: 2.3_
+
+  - [x] 3.5 Remove redundant cleanup scripts
+    - Remove cleanup.bat (Windows-specific, not needed for Ubuntu deployment)
+    - Remove deep_cleanup.bat (Windows-specific, not needed for Ubuntu deployment)
+    - Evaluate cleanup.py - keep if useful for Ubuntu, otherwise remove
+    - Document cleanup approach for Ubuntu deployment
+    - _Bug_Condition: Multiple cleanup files for different platforms without clear organization_
+    - _Expected_Behavior: Organized cleanup utilities without redundant platform-specific duplicates_
+    - _Preservation: Essential cleanup functionality is preserved_
+    - _Requirements: 2.4_
+
+  - [x] 3.6 Update documentation
+    - Update README.md or create DEPLOYMENT_GUIDE.md with clear deployment instructions
+    - Document that setup_ubuntu.py is the single entry point for Ubuntu deployment
+    - Document that migrate.py is the single migration system using schema/migrations/
+    - Remove references to deprecated scripts (schema/migrate.py, complete_setup.sh)
+    - Add clear migration workflow documentation showing: setup_ubuntu.py for initial setup, migrate.py for ongoing migrations
+    - Document which files were removed and why
+    - _Bug_Condition: Documentation references multiple migration approaches_
+    - _Expected_Behavior: Documentation clearly describes unified migration system_
+    - _Preservation: Existing configuration and usage patterns are documented_
+    - _Requirements: 2.1, 2.3, 2.5, 2.6_
+
+  - [x] 3.7 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Unified Migration System
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - Verify only one migration system exists (migrate.py)
+    - Verify unified setup script exists (setup_ubuntu.py)
+    - Verify redundant files have been removed
+    - Verify migration state is consistent (only migrate.py tracks versions)
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
+
+  - [x] 3.8 Verify preservation tests still pass
+    - **Property 2: Preservation** - Existing Migration Execution and Application Functionality
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - Verify existing migrations (001, 002, 003) execute with identical schema results
+    - Verify main.py continues to function correctly
+    - Verify .env and config.yaml are read correctly
+    - Verify finmatcher package modules import without errors
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all tests still pass after fix (no regressions)
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Run all exploration tests - verify they now pass (bug is fixed)
+  - Run all preservation tests - verify they still pass (no regressions)
+  - Run full deployment flow test: fresh database → setup_ubuntu.py → verify database ready
+  - Run migration flow test: existing database → migrate.py up → verify migrations applied
+  - Run application flow test: setup complete → main.py → verify application works
+  - Verify no references to deprecated or removed files exist in active code
+  - Ask the user if questions arise or if additional validation is needed

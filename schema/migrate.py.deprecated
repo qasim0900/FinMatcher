@@ -2,12 +2,36 @@
 """
 FinMatcher v2 to v3 Migration Script
 Migrates existing v2 schema to v3 distributed pipeline
+
+================================================================================
+DEPRECATED: This script is deprecated and should not be used.
+
+Please use the unified migration system instead:
+  - For initial setup: python setup_ubuntu.py
+  - For migrations: python migrate.py up
+
+The unified system provides:
+  - Integrated migration tracking via schema_migrations table
+  - Version-controlled SQL migrations in schema/migrations/
+  - Better error handling and rollback support
+  - Single source of truth for all database operations
+
+This file is kept for reference only.
+================================================================================
 """
 
 import psycopg2
 import os
 from dotenv import load_dotenv
 import sys
+
+print("=" * 80)
+print("WARNING: This script is DEPRECATED!")
+print("Please use the unified migration system:")
+print("  - For initial setup: python setup_ubuntu.py")
+print("  - For migrations: python migrate.py up")
+print("=" * 80)
+print()
 
 load_dotenv()
 

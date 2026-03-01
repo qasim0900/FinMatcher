@@ -10,6 +10,7 @@
 7. [System Testing](#system-testing)
 8. [Production Run](#production-run)
 9. [Troubleshooting](#troubleshooting)
+10. [System Cleanup](#system-cleanup)
 
 ---
 
@@ -202,25 +203,75 @@ pip install pandas numpy scikit-learn pybloom-live psycopg2-binary
 
 ## 🔄 STEP 6: Database Migration
 
-### Check Current Schema
-```bash
-# Navigate to schema directory
-cd schema
+### Unified Migration System
 
-# List migration files
-dir
+FinMatcher uses a unified migration system with two entry points:
+
+1. **`setup_ubuntu.py`** - Complete initial setup (database creation + migrations)
+2. **`migrate.py`** - Ongoing migration management
+
+### Option A: Initial Setup (Fresh Installation)
+
+For a fresh Ubuntu server deployment, use the unified setup script:
+
+```bash
+# Run complete setup (creates database, runs all migrations, validates)
+python setup_ubuntu.py
 ```
 
-**Expected Files:**
-- init.sql
-- init_v3.sql
-- migrate_v2_to_v3.sql
-- add_attachment_fields.sql
+**What it does:**
+- ✅ Checks PostgreSQL connection
+- ✅ Creates database if not exists
+- ✅ Creates schema_migrations tracking table
+- ✅ Runs all migrations from schema/migrations/ directory
+- ✅ Validates all required tables exist
+- ✅ Runs test query to verify database is functional
 
-### Run Initial Migration
+**Expected Output:**
+```
+[INFO] Checking PostgreSQL connection...
+[INFO] Database 'finmatcher' created successfully
+[INFO] Running migrations...
+[INFO] Applied migration: 001_initial_schema.sql
+[INFO] Applied migration: 002_add_optimization_fields.sql
+[INFO] Applied migration: 003_add_performance_indexes.sql
+[INFO] All migrations applied successfully
+[INFO] Validating database setup...
+[INFO] All required tables exist
+[INFO] Database setup completed successfully!
+```
+
+### Option B: Ongoing Migrations (Existing Installation)
+
+For applying new migrations to an existing database:
+
 ```bash
-# For PostgreSQL
-psql -U finmatcher_user -d finmatcher -f schema/init_v3.sql
+# Check migration status
+python migrate.py status
+
+# Apply pending migrations
+python migrate.py up
+
+# Rollback last migration (if needed)
+python migrate.py down
+```
+
+### Migration Files Location
+
+All migration files are stored in `schema/migrations/`:
+
+```bash
+schema/migrations/
+├── 001_initial_schema.sql          # Creates all base tables
+├── 002_add_optimization_fields.sql # Adds performance fields
+└── 003_add_performance_indexes.sql # Creates indexes
+```
+
+### Verify Migration Success
+
+```bash
+# Check applied migrations
+psql -U finmatcher_user -d finmatcher -c "SELECT * FROM schema_migrations ORDER BY version;"
 
 # Verify tables created
 psql -U finmatcher_user -d finmatcher -c "\dt"
@@ -231,47 +282,22 @@ psql -U finmatcher_user -d finmatcher -c "\dt"
 - transactions ✅
 - receipts ✅
 - matches ✅
-- matching_statistics ✅
+- jobs ✅
+- reports ✅
+- audit_log ✅
+- metrics ✅
+- schema_migrations ✅
 
-### Add Optimization Fields
-```bash
-# Add attachment_file field
-psql -U finmatcher_user -d finmatcher -f schema/add_attachment_fields.sql
+### Deprecated Migration Scripts
 
-# Verify field added
-psql -U finmatcher_user -d finmatcher -c "\d processed_emails"
-```
+The following scripts are **deprecated** and should not be used:
 
-**Expected:** attachment_file column visible ✅
+- ❌ `schema/migrate.py` (deprecated - use `migrate.py` instead)
+- ❌ `complete_setup.sh` (deprecated - use `setup_ubuntu.py` instead)
+- ❌ `schema/init_v3.sql` (deprecated - migrations now in schema/migrations/)
+- ❌ `schema/migrate_v2_to_v3.sql` (deprecated - consolidated into migration system)
 
-### Create Indexes for Performance
-```sql
--- Run in psql
-psql -U finmatcher_user -d finmatcher
-
--- Create performance indexes
-CREATE INDEX IF NOT EXISTS idx_emails_attachment_file 
-ON processed_emails(attachment_file) 
-WHERE attachment_file = TRUE;
-
-CREATE INDEX IF NOT EXISTS idx_emails_date_amount 
-ON processed_emails(date, amount) 
-WHERE attachment_file = TRUE;
-
-CREATE INDEX IF NOT EXISTS idx_transactions_date 
-ON transactions(date);
-
-CREATE INDEX IF NOT EXISTS idx_receipts_date 
-ON receipts(date);
-
--- Verify indexes
-\di
-
--- Exit
-\q
-```
-
-**Expected:** All indexes created ✅
+These files have been moved to `.deprecated` extensions and contain notices pointing to the new unified system.
 
 ---
 
@@ -316,17 +342,6 @@ python test_fast_processor.py
 ```
 
 **Expected:** All tests pass ✅
-
-### Test 6: End-to-End Validation
-```bash
-# Run comprehensive validation
-python comprehensive_validation_test.py
-```
-
-**Expected:** 
-- Dataset generated: 200,000 emails ✅
-- Processing time: < 1 hour ✅
-- Final verdict: PASS ✅
 
 ---
 
@@ -548,10 +563,10 @@ python -c "from finmatcher.utils.performance_monitor import PerformanceMonitor; 
 
 ### Pre-Deployment
 - [ ] PostgreSQL installed and running
-- [ ] Database created and migrated
-- [ ] Gmail API credentials configured
 - [ ] .env file configured correctly
-- [ ] All dependencies installed
+- [ ] Gmail API credentials configured
+- [ ] All dependencies installed (`poetry install`)
+- [ ] Database setup completed (`python setup_ubuntu.py`)
 - [ ] Test run completed successfully
 
 ### Deployment
@@ -569,6 +584,13 @@ python -c "from finmatcher.utils.performance_monitor import PerformanceMonitor; 
 - [ ] Error handling working
 - [ ] Logs being captured
 
+### Migration System Verification
+- [ ] Only `migrate.py` used for migrations (not deprecated scripts)
+- [ ] All migrations tracked in `schema_migrations` table
+- [ ] `setup_ubuntu.py` used for initial setup
+- [ ] Deprecated files (`.deprecated` extension) not referenced in code
+- [ ] No references to removed scripts in documentation or code
+
 ---
 
 ## 🎯 Quick Start Commands
@@ -578,14 +600,12 @@ python -c "from finmatcher.utils.performance_monitor import PerformanceMonitor; 
 # 1. Install dependencies
 poetry install
 
-# 2. Setup database
-psql -U postgres -c "CREATE DATABASE finmatcher;"
-psql -U finmatcher_user -d finmatcher -f schema/init_v3.sql
-psql -U finmatcher_user -d finmatcher -f schema/add_attachment_fields.sql
+# 2. Configure environment
+cp .env.example .env
+nano .env  # Edit with your credentials
 
-# 3. Configure environment
-copy .env.example .env
-notepad .env
+# 3. Setup database (unified approach)
+python setup_ubuntu.py
 
 # 4. Test system
 python test_fast_processor.py
@@ -600,13 +620,176 @@ python main.py
 python main.py
 
 # Monitor logs
-Get-Content logs\finmatcher.log -Wait -Tail 50
+tail -f logs/finmatcher.log
 
 # Check results
-dir reports
+ls -la reports/
 
 # Verify database
 psql -U finmatcher_user -d finmatcher -c "SELECT COUNT(*) FROM matches;"
+```
+
+### Migration Management
+```bash
+# Check migration status
+python migrate.py status
+
+# Apply new migrations
+python migrate.py up
+
+# Rollback if needed
+python migrate.py down
+```
+
+---
+
+## 🧹 System Cleanup
+
+### Project Cleanup Summary
+
+As part of the migration system consolidation, the following files have been removed or deprecated to eliminate redundancy and confusion:
+
+#### Deprecated Migration Scripts
+
+**Files moved to `.deprecated` extension:**
+
+1. **`schema/migrate.py.deprecated`**
+   - **Reason**: Separate v2-to-v3 migration script that didn't integrate with the main migration system
+   - **Replacement**: `migrate.py` (unified migration manager)
+   - **Impact**: All migrations now tracked in `schema_migrations` table
+
+2. **`complete_setup.sh.deprecated`**
+   - **Reason**: Bash-only setup script, not cross-platform, manually ran SQL files
+   - **Replacement**: `setup_ubuntu.py` (Python-based, cross-platform)
+   - **Impact**: Single unified entry point for complete database setup
+
+#### Removed Redundant Setup Scripts
+
+**Files deleted:**
+
+3. **`setup_linux.sh`**
+   - **Reason**: Redundant with `complete_setup.sh`, unclear purpose
+   - **Replacement**: `setup_ubuntu.py`
+
+4. **`reset_and_migrate.sh`**
+   - **Reason**: Functionality absorbed into `migrate.py`
+   - **Replacement**: `migrate.py up` command
+
+5. **`fix_database.sh`**
+   - **Reason**: Ad-hoc database fixes, not part of systematic migration
+   - **Replacement**: `setup_ubuntu.py` for fresh setup, `migrate.py` for migrations
+
+#### Removed Redundant Test Files
+
+**Files deleted:**
+
+6. **`comprehensive_project_test.py`**
+   - **Reason**: From initial testing phase, no longer actively used
+   - **Replacement**: Current test suite in `tests/` directory
+
+7. **`comprehensive_validation_test.py`**
+   - **Reason**: From validation phase, functionality covered by current tests
+   - **Replacement**: Property-based tests in test suite
+
+8. **`test_phase1_integration.py`**
+   - **Reason**: Phase 1 integration complete, test no longer needed
+   - **Replacement**: Integration tests in test suite
+
+#### Removed Platform-Specific Cleanup Scripts
+
+**Files deleted:**
+
+9. **`cleanup.bat`**
+   - **Reason**: Windows-specific, not needed for Ubuntu deployment
+   - **Replacement**: `cleanup.py` (cross-platform Python script)
+
+10. **`deep_cleanup.bat`**
+    - **Reason**: Windows-specific, redundant with `cleanup.py`
+    - **Replacement**: `cleanup.py` with appropriate flags
+
+### Benefits of Consolidation
+
+**Before Consolidation:**
+- 3 separate migration systems (migrate.py, schema/migrate.py, complete_setup.sh)
+- 5 overlapping setup scripts with unclear purposes
+- 3 redundant test files cluttering the project
+- 3 platform-specific cleanup scripts
+
+**After Consolidation:**
+- ✅ 1 unified migration system (`migrate.py` + `schema/migrations/`)
+- ✅ 1 primary setup script for Ubuntu (`setup_ubuntu.py`)
+- ✅ Clear test organization in `tests/` directory
+- ✅ 1 cross-platform cleanup script (`cleanup.py`)
+
+### Migration Workflow (New System)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Fresh Installation                     │
+│                                                          │
+│  1. Configure .env                                       │
+│  2. Run: python setup_ubuntu.py                         │
+│     ├─ Creates database                                 │
+│     ├─ Creates schema_migrations table                  │
+│     ├─ Runs all migrations from schema/migrations/      │
+│     └─ Validates setup                                  │
+│                                                          │
+│  Result: Database ready for use                         │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│                  Ongoing Migrations                      │
+│                                                          │
+│  1. Developer adds new migration to schema/migrations/   │
+│     (e.g., 004_add_new_feature.sql)                     │
+│                                                          │
+│  2. Check status: python migrate.py status              │
+│     Shows: Pending migrations: 004_add_new_feature.sql  │
+│                                                          │
+│  3. Apply migration: python migrate.py up               │
+│     ├─ Reads schema/migrations/004_add_new_feature.sql  │
+│     ├─ Executes SQL                                     │
+│     └─ Records in schema_migrations table               │
+│                                                          │
+│  Result: Database updated with new schema               │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Cleanup Script (Ubuntu/Linux)
+
+The project includes a cross-platform cleanup script for removing temporary files, cache, and logs:
+
+```bash
+# Run cleanup script
+python cleanup.py
+```
+
+**What gets cleaned:**
+- Python cache files (`__pycache__`, `.pyc`, `.pyo`)
+- Log files (`logs/*.log`)
+- Temporary attachments (`temp_attachments/*`)
+- Output files (`output/*`)
+- Excel reports (`reports/*.xlsx`)
+- Attachments (`attachments/*`)
+- Kiro cache (`.kiro/cache`)
+- Test cache (`.pytest_cache`)
+- Coverage reports (`htmlcov`, `.coverage`)
+- SQLite database (if exists)
+
+**Note:** PostgreSQL database records and configuration files (`.env`, `config.yaml`) are preserved.
+
+### Manual Cleanup
+```bash
+# Clean Python cache only
+find . -type d -name "__pycache__" -exec rm -rf {} +
+find . -type f -name "*.pyc" -delete
+
+# Clean logs only
+rm -f logs/*.log
+
+# Clean temporary files only
+rm -rf temp_attachments/*
+rm -rf output/*
 ```
 
 ---
