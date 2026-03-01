@@ -1,0 +1,299 @@
+# Phase 1: Core Integration Configuration
+# FastEmailProcessor optimized settings for production deployment
+
+# =====================================================
+# DATABASE CONFIGURATION
+# =====================================================
+database:
+  # PostgreSQL connection settings
+  host: "localhost"
+  port: 5432
+  database: "finmatcher_db"
+  username: "finmatcher_user"
+  password: "your_secure_password_here"
+  
+  # Connection pool settings for high performance
+  pool_size: 20
+  max_overflow: 30
+  pool_timeout: 30
+  pool_recycle: 3600
+  
+  # Bulk operation settings
+  batch_size: 1000
+  bulk_insert_method: "multi"  # Use multi-row INSERT statements
+  
+  # Connection string (auto-generated from above settings)
+  uri: "postgresql://${database.username}:${database.password}@${database.host}:${database.port}/${database.database}"
+
+# =====================================================
+# GMAIL API CONFIGURATION
+# =====================================================
+gmail_api:
+  # Authentication settings
+  credentials_file: "finmatcher/auth_files/credentials.json"
+  token_file: "finmatcher/auth_files/token.json"
+  scopes:
+    - "https://www.googleapis.com/auth/gmail.readonly"
+    - "https://www.googleapis.com/auth/gmail.modify"
+  
+  # API rate limiting and optimization
+  requests_per_second: 250  # Gmail API quota limit
+  batch_size: 100           # Emails per batch request
+  max_retries: 3
+  retry_delay: 1.0          # Seconds between retries
+  exponential_backoff: true
+  
+  # Query optimization settings
+  max_results_per_page: 10000
+  max_pages: 50             # Safety limit
+  
+  # Server-side filtering query
+  financial_query: |
+    has:attachment AND (
+      subject:(invoice OR receipt OR bill OR statement OR payment OR order OR confirmation) OR
+      from:(billing OR invoices OR receipts OR accounting OR noreply OR orders OR payments) OR
+      filename:(pdf OR jpg OR png OR jpeg OR xlsx OR docx)
+    )
+
+# =====================================================
+# PARALLEL PROCESSING CONFIGURATION
+# =====================================================
+parallel_processing:
+  # Thread pool settings for I/O operations
+  max_threads: 50           # Optimal for Gmail API calls
+  thread_timeout: 30        # Seconds
+  
+  # Process pool settings for CPU operations
+  max_processes: 8          # Based on CPU cores
+  process_timeout: 60       # Seconds
+  
+  # Chunk processing settings
+  chunk_size: 1000          # Emails per processing chunk
+  memory_limit_mb: 2048     # Memory limit per process
+  
+  # Progress tracking
+  enable_progress_bar: true
+  log_progress_interval: 100  # Log every N emails
+
+# =====================================================
+# VECTORIZED PROCESSING CONFIGURATION
+# =====================================================
+vectorized_processing:
+  # Pandas optimization settings
+  use_categorical: true     # Use categorical data types for memory efficiency
+  optimize_memory: true     # Optimize DataFrame memory usage
+  
+  # Data cleaning settings
+  remove_duplicates: true
+  handle_missing_dates: true
+  standardize_timezones: true
+  
+  # Financial scoring settings
+  financial_keywords:
+    - "invoice"
+    - "receipt" 
+    - "bill"
+    - "statement"
+    - "payment"
+    - "order"
+    - "confirmation"
+    - "transaction"
+    - "purchase"
+    - "due"
+    - "amount"
+    - "total"
+  
+  financial_domains:
+    - "billing"
+    - "invoices"
+    - "receipts"
+    - "accounting"
+    - "noreply"
+    - "orders"
+    - "payments"
+    - "statements"
+  
+  # Scoring weights
+  keyword_weight: 0.5
+  domain_weight: 0.3
+  amount_pattern_weight: 0.2
+
+# =====================================================
+# PERFORMANCE MONITORING
+# =====================================================
+monitoring:
+  # Metrics collection
+  enable_metrics: true
+  metrics_interval: 60      # Seconds
+  
+  # Performance targets
+  target_emails_per_second: 1000
+  target_memory_usage_percent: 80
+  target_cpu_usage_percent: 90
+  
+  # Logging settings
+  log_level: "INFO"
+  log_file: "logs/phase1_processing.log"
+  log_rotation: "daily"
+  log_retention_days: 30
+  
+  # Alert thresholds
+  alert_on_slow_processing: true
+  slow_processing_threshold: 100  # emails/second
+  alert_on_high_memory: true
+  high_memory_threshold: 90       # percent
+  
+  # Statistics tracking
+  track_processing_stats: true
+  stats_update_interval: 300      # seconds
+
+# =====================================================
+# ERROR HANDLING AND RECOVERY
+# =====================================================
+error_handling:
+  # Retry settings
+  max_retries: 3
+  retry_delay: 2.0          # Seconds
+  exponential_backoff: true
+  backoff_multiplier: 2.0
+  
+  # Error logging
+  log_errors: true
+  error_log_file: "logs/phase1_errors.log"
+  
+  # Recovery settings
+  enable_checkpointing: true
+  checkpoint_interval: 1000  # emails
+  checkpoint_file: "checkpoints/phase1_checkpoint.json"
+  
+  # Failure handling
+  continue_on_error: true
+  max_consecutive_errors: 10
+  error_threshold_percent: 5  # Fail if >5% of emails have errors
+
+# =====================================================
+# CACHING AND OPTIMIZATION
+# =====================================================
+caching:
+  # Email metadata caching
+  enable_metadata_cache: true
+  cache_size_mb: 512
+  cache_ttl_hours: 24
+  
+  # Database query caching
+  enable_query_cache: true
+  query_cache_size: 1000
+  
+  # File system caching
+  temp_directory: "temp/phase1"
+  cleanup_temp_files: true
+  temp_file_ttl_hours: 2
+
+# =====================================================
+# SECURITY SETTINGS
+# =====================================================
+security:
+  # Data encryption
+  encrypt_sensitive_data: true
+  encryption_key_file: "keys/phase1_encryption.key"
+  
+  # Access control
+  require_authentication: true
+  allowed_ip_ranges:
+    - "127.0.0.1/32"
+    - "10.0.0.0/8"
+    - "192.168.0.0/16"
+  
+  # Data sanitization
+  sanitize_email_content: true
+  remove_personal_info: true
+  
+  # Audit logging
+  enable_audit_log: true
+  audit_log_file: "logs/phase1_audit.log"
+
+# =====================================================
+# DEVELOPMENT AND TESTING
+# =====================================================
+development:
+  # Testing settings
+  test_mode: false
+  test_email_limit: 1000
+  mock_gmail_api: false
+  
+  # Debug settings
+  debug_mode: false
+  verbose_logging: false
+  profile_performance: false
+  
+  # Development database
+  use_dev_database: false
+  dev_database_uri: "postgresql://dev_user:dev_pass@localhost/finmatcher_dev"
+
+# =====================================================
+# INTEGRATION SETTINGS
+# =====================================================
+integration:
+  # Phase transitions
+  auto_proceed_to_phase2: false
+  phase2_trigger_threshold: 1000  # Minimum emails to proceed
+  
+  # Data validation
+  validate_email_format: true
+  validate_attachment_presence: true
+  validate_financial_score: true
+  
+  # Export settings
+  export_results: true
+  export_format: "json"
+  export_file: "output/phase1_results.json"
+  
+  # Notification settings
+  notify_on_completion: true
+  notification_email: "admin@company.com"
+  notification_webhook: "https://your-webhook-url.com/phase1-complete"
+
+# =====================================================
+# RESOURCE LIMITS
+# =====================================================
+resource_limits:
+  # Memory limits
+  max_memory_mb: 4096
+  memory_warning_threshold: 3072
+  
+  # Processing limits
+  max_processing_time_hours: 2
+  max_emails_per_run: 50000
+  
+  # Disk space limits
+  min_free_disk_gb: 10
+  temp_space_limit_gb: 5
+  
+  # Network limits
+  max_concurrent_connections: 100
+  connection_timeout: 30
+  read_timeout: 60
+
+# =====================================================
+# PHASE 1 SPECIFIC SETTINGS
+# =====================================================
+phase1:
+  # Core integration settings
+  replace_existing_emailfetcher: true
+  backup_original_data: true
+  backup_directory: "backups/phase1"
+  
+  # Validation settings
+  validate_gmail_connection: true
+  validate_database_schema: true
+  validate_performance_targets: true
+  
+  # Success criteria
+  minimum_emails_processed: 1000
+  minimum_success_rate: 95.0    # percent
+  maximum_processing_time: 7200  # seconds (2 hours)
+  
+  # Completion actions
+  generate_summary_report: true
+  update_system_status: true
+  prepare_for_phase2: true
