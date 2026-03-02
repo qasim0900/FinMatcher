@@ -627,9 +627,9 @@ class EmailFetcher:
                 # Track filter method
                 filter_method = result.get('filter_method')
                 if filter_method:
-                    if filter_method.value == 'auto_accept':
+                    if filter_method == 'auto_accept':
                         self.filter_stats['auto_accepted'] += 1
-                    elif filter_method.value == 'ai_verified':
+                    elif filter_method == 'ai_verified':
                         self.filter_stats['ai_verified'] += 1
                 
                 # Add filter metadata to email data

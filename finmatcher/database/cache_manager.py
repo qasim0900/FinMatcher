@@ -258,6 +258,14 @@ class CacheManager:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
+                # Remove duplicates within batch (keep first occurrence)
+                seen = set()
+                unique_emails = []
+                for email in processed_emails:
+                    if email.message_id not in seen:
+                        seen.add(email.message_id)
+                        unique_emails.append(email)
+                
                 # Prepare batch data
                 batch_data = [
                     (
@@ -271,7 +279,7 @@ class CacheManager:
                         email.folder,
                         email.is_financial
                     )
-                    for email in processed_emails
+                    for email in unique_emails
                 ]
                 
                 # Execute batch insert using execute_values for better performance
